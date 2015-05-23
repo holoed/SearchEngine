@@ -48,7 +48,7 @@ main = hspec $ do
       (toList . createIndex) ""
         `shouldBe` []
 
-    it "should create an index of one element for a single word doc" $ do
+    it "should create an index of one element for a single word doc." $ do
       (toList . createIndex) "Hello"
         `shouldBe` [("Hello", [1])]
 
