@@ -1,0 +1,8 @@
+language: haskell
+notifications:
+  email: false
+before_script:
+- cabal configure --enable-tests
+- cabal build
+script:
+- cabal test --show-details=always --test-options="--color"
