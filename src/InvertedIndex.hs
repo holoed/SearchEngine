@@ -43,8 +43,7 @@ module InvertedIndex where
     where
       count [] x = [(x, 1)]
       count ((y, i):xs) x | x == y = (y, i + 1):xs
-      count ((y, i):xs) x | x /= y = (x, 1):((y, i):xs)
-      count _ _ = fail "This should never happen"
+      count ((y, i):xs) x          = (x, 1):((y, i):xs)
 
   search :: Index -> String -> [(LineNumber, Frequency)]
   search i = frequencies . concatMap (\w -> i!w) . cleanWords . words

@@ -19,7 +19,8 @@ library
   ghc-options: -Wall
   hs-source-dirs:      src
   build-depends:       base,
-                       containers
+                       containers,
+                       transformers
   default-language:    Haskell2010
 
 test-suite tests
@@ -29,5 +30,7 @@ test-suite tests
   hs-source-dirs: tests, src
   build-depends:       base,
                        hspec,
-                       containers
+                       containers,
+                       transformers,
+                       split
   default-language:    Haskell2010

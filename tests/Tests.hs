@@ -1,8 +1,8 @@
 module Main where
 
-import           Data.Map      (toList)
-import           InvertedIndex
-import           Test.Hspec
+import Data.Map      (toList)
+import InvertedIndex
+import Test.Hspec
 
 main :: IO ()
 main = hspec $ do
@@ -99,3 +99,13 @@ main = hspec $ do
               "Behind the planet of the apes\n" ++
               "Planet of the apes")
        search index "Behind apes" `shouldBe` [(3,2),(4,1),(2,1)]
+
+  describe "Integration tests" $ do
+
+    it "should work" $ do
+      movies <- readFile "./tests/SampleData.txt"
+      let index = createIndex movies
+      head (search index "Cruise Hackman") `shouldBe` (3, 2)
+      head (search index "Cruise Nicholson") `shouldBe` (1, 2)
+      take 3 (search index "Robert De Niro") `shouldBe` [(9, 3), (8, 3)]
+      head (search index "Washington Ethan") `shouldBe` (6, 2)
