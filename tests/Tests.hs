@@ -1,54 +1,54 @@
 module Main where
 
-import InvertedIndex
-import Test.Hspec
-import Data.Map (toList)
+import           Data.Map      (toList)
+import           InvertedIndex
+import           Test.Hspec
 
 main :: IO ()
 main = hspec $ do
 
   describe "numLines tests" $ do
 
-    it "should return first line with index" $ do
+    it "should return first line with index" $
       numLines "Hello World" `shouldBe` [("Hello World", 1)]
 
-    it "should return two lines with index" $ do
+    it "should return two lines with index" $
       numLines "Hello\nWorld" `shouldBe` [("Hello", 1), ("World", 2)]
 
-    it "should return n lines with index" $ do
+    it "should return n lines with index" $
       numLines "Welcome to\nReal World\nof Haskell"
        `shouldBe` [("Welcome to", 1), ("Real World", 2), ("of Haskell", 3)]
 
   describe "cleanWords tests" $ do
 
-    it "should return words" $ do
+    it "should return words" $
       cleanWords ["Hello", "World"] `shouldBe` ["Hello", "World"]
 
-    it "should remove numbers" $ do
+    it "should remove numbers" $
       cleanWords ["Welcome6"] `shouldBe` ["Welcome"]
 
-    it "should remove non ascii chars" $ do
+    it "should remove non ascii chars" $
       cleanWords ["This,", "is", "an", "experiment'", "of", "great", "%"]
         `shouldBe` ["This", "is", "an", "experiment", "of", "great"]
 
   describe "allNumWords tests" $ do
 
-    it "should convert lines in to words keeping line numbers" $ do
+    it "should convert lines in to words keeping line numbers" $
       allNumWords [("Welcome to", 1), ("the real", 2)]
         `shouldBe` [("Welcome", 1), ("to", 1), ("the", 2), ("real", 2)]
 
-    it "should clean while splitting into words" $ do
+    it "should clean while splitting into words" $
       allNumWords [("Lo ha detto papa'", 1), ("che va' bene, capito", 2)]
         `shouldBe` [("Lo", 1), ("ha", 1), ("detto", 1), ("papa", 1),
                     ("che", 2), ("va", 2), ("bene", 2), ("capito", 2)]
 
   describe "createIndex tests" $ do
 
-    it "should create an empty index for an empty document" $ do
+    it "should create an empty index for an empty document" $
       (toList . createIndex) ""
         `shouldBe` []
 
-    it "should create an index of one element for a single word doc" $ do
+    it "should create an index of one element for a single word doc" $
       (toList . createIndex) "Hello"
         `shouldBe` [("Hello", [1])]
 
@@ -70,14 +70,13 @@ main = hspec $ do
 
   describe "frequencies tests" $ do
 
-    it "should return frequency of one for one item" $ do
-      frequencies ['x'] `shouldBe` [('x', 1)]
+    it "should return frequency of one for one item" $
+      frequencies "x" `shouldBe` [('x', 1)]
 
     it "should return frequencies of more item" $ do
-      frequencies ['x','y','z'] `shouldBe` [('z', 1), ('y', 1), ('x', 1)]
-      frequencies ['x','y','x'] `shouldBe` [('x', 2), ('y', 1)]
-      frequencies ['x','y','y','x','y']
-        `shouldBe` [('y', 3), ('x', 2)]
+      frequencies "xyz" `shouldBe` [('z', 1), ('y', 1), ('x', 1)]
+      frequencies "xyx" `shouldBe` [('x', 2), ('y', 1)]
+      frequencies "xyyxy" `shouldBe` [('y', 3), ('x', 2)]
 
   describe "search tests" $ do
 
