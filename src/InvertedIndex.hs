@@ -17,7 +17,7 @@ module InvertedIndex where
   both = liftA2 (&&)
 
   numLines :: Doc -> [(Line, LineNumber)]
-  numLines = flip zip [1..] . lines
+  numLines = flip zip [0..] . lines
 
   cleanWords :: [Word] -> [Word]
   cleanWords = filter (not . null) . map (filter (both isLetter isAscii))
