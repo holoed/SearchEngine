@@ -1,5 +1,6 @@
 module InvertedIndex where
 
+  import Data.Function
   import Data.Char
   import Data.List
   import Data.Map (Map, fromList, (!))
@@ -19,7 +20,7 @@ module InvertedIndex where
   numLines = flip zip [0..] . lines
 
   numWords :: Line -> [(Word, Pos)]
-  numWords = (flip zip [0..]) . cleanWords . words
+  numWords = flip zip [0..] . cleanWords . words
 
   cleanWords :: [Word] -> [Word]
   cleanWords = map (map toLower) .
@@ -43,5 +44,5 @@ module InvertedIndex where
   createIndex =  fromList . accumulate . makeLists . sort . allNumWords . numLines
 
   search :: Index -> String -> [(Pos, LineNumber)]
-  search i = foldl1' (intersectBy (\x y -> snd x == snd y)) .
+  search i = foldl1' (intersectBy ((==) `on` snd)) .
              map (i!) . cleanWords . words
