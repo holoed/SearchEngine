@@ -22,25 +22,25 @@ main = hspec $ do
   describe "cleanWords tests" $ do
 
     it "should return words" $
-      cleanWords ["Hello", "World"] `shouldBe` ["Hello", "World"]
+      cleanWords ["Hello", "World"] `shouldBe` ["hello", "world"]
 
     it "should remove numbers" $
-      cleanWords ["Welcome6"] `shouldBe` ["Welcome"]
+      cleanWords ["Welcome6"] `shouldBe` ["welcome"]
 
     it "should remove non ascii chars" $
       cleanWords ["This,", "is", "an", "experiment'", "of", "great", "%"]
-        `shouldBe` ["This", "is", "an", "experiment", "of", "great"]
+        `shouldBe` ["this", "is", "an", "experiment", "of", "great"]
 
   describe "allNumWords tests" $ do
 
     it "should convert lines in to words keeping line numbers" $
-      allNumWords [("Welcome to", 1), ("the real", 2)]
-        `shouldBe` [("Welcome", 1), ("to", 1), ("the", 2), ("real", 2)]
+      allNumWords [("Welcome to", 0), ("the real", 1)]
+        `shouldBe` [("welcome", 0, 0), ("to", 1, 0), ("the", 0, 1), ("real", 1, 1)]
 
     it "should clean while splitting into words" $
-      allNumWords [("Lo ha detto papa'", 1), ("che va' bene, capito", 2)]
-        `shouldBe` [("Lo", 1), ("ha", 1), ("detto", 1), ("papa", 1),
-                    ("che", 2), ("va", 2), ("bene", 2), ("capito", 2)]
+      allNumWords [("Lo ha detto papa'", 0), ("che va' bene, capito", 1)]
+        `shouldBe` [("lo", 0, 0), ("ha", 1, 0), ("detto", 2, 0), ("papa", 3, 0),
+                    ("che", 0, 1), ("va", 1, 1), ("bene", 2, 1), ("capito", 3, 1)]
 
   describe "createIndex tests" $ do
 
@@ -50,47 +50,37 @@ main = hspec $ do
 
     it "should create an index of one element for a single word doc" $
       (toList . createIndex) "Hello"
-        `shouldBe` [("Hello", [0])]
+        `shouldBe` [("hello", [(0, 0)])]
 
     it "should create an index" $ do
       (toList . createIndex) "Hello World"
-        `shouldBe` [("Hello", [0]), ("World", [0])]
+        `shouldBe` [("hello", [(0, 0)]), ("world", [(1, 0)])]
 
       (toList . createIndex) "Back to the Future\nA few good man"
-        `shouldBe`[("A",[1]),("Back",[0]),("Future",[0]),("few",[1]),
-                   ("good",[1]),("man",[1]),("the",[0]),("to",[0])]
+        `shouldBe`[("a",[(0, 1)]),("back",[(0,0)]),("few",[(1,1)]),("future",[(3,0)]),
+                   ("good",[(2, 1)]),("man",[(3, 1)]),("the",[(2, 0)]),("to",[(1, 0)])]
 
       (toList . createIndex) "A few good men\nAll the President's men"
-        `shouldBe`[("A",[0]),("All",[1]),("Presidents",[1]),("few",[0]),
-                   ("good",[0]),("men",[1,0]),("the",[1])]
+        `shouldBe`[("a",[(0, 0)]),("all",[(0, 1)]),("few",[(1, 0)]),
+                   ("good",[(2, 0)]),("men",[(3, 1), (3, 0)]),("presidents",[(2, 1)]),("the",[(1, 1)])]
 
       (toList . createIndex) "Back to the future\nIn to the future\nBack in time"
-        `shouldBe`[("Back",[2,0]),("In",[1]),("future",[1,0]),
-                   ("in",[2]),("the",[1,0]),("time",[2]),("to",[1,0])]
-
-  describe "frequencies tests" $ do
-
-    it "should return frequency of one for one item" $
-      frequencies "x" `shouldBe` [('x', 1)]
-
-    it "should return frequencies of more item" $ do
-      frequencies "xyz" `shouldBe` [('z', 1), ('y', 1), ('x', 1)]
-      frequencies "xyx" `shouldBe` [('x', 2), ('y', 1)]
-      frequencies "xyyxy" `shouldBe` [('y', 3), ('x', 2)]
+        `shouldBe`[("back",[(0,2),(0,0)]),("future",[(3,1),(3,0)]),("in",[(1,2), (0,1)]),
+                   ("the",[(2,1),(2,0)]),("time",[(2, 2)]),("to",[(1,1),(1,0)])]
 
   describe "search tests" $ do
 
      it "should find single word document" $ do
        let index = createIndex "Hello"
-       search index "Hello" `shouldBe` [(0,1)]
+       search index "Hello" `shouldBe` [(0,0)]
 
      it "should find word in two words document" $ do
        let index = createIndex "Hello World"
-       search index "World" `shouldBe` [(0,1)]
+       search index "World" `shouldBe` [(1,0)]
 
      it "should find word in two lines doc" $ do
        let index = createIndex "Hello\nWorld"
-       search index "World" `shouldBe` [(1, 1)]
+       search index "World" `shouldBe` [(0, 1)]
 
      it "should find most likely line" $ do
        let index = createIndex (
@@ -98,14 +88,14 @@ main = hspec $ do
               "Behind enemy lines\n" ++
               "Behind the planet of the apes\n" ++
               "Planet of the apes")
-       search index "Behind apes" `shouldBe` [(2,2),(3,1),(1,1)]
+       search index "Behind apes" `shouldBe` [(0,2)]
 
   describe "Integration tests" $ do
 
     it "should work" $ do
       movies <- readFile "./tests/SampleData.txt"
       let index = createIndex movies
-      head (search index "Cruise Hackman") `shouldBe` (2, 2)
-      head (search index "Cruise Nicholson") `shouldBe` (0, 2)
-      take 3 (search index "Robert De Niro") `shouldBe` [(8, 3), (7, 3)]
-      head (search index "Washington Ethan") `shouldBe` (5, 2)
+      search index "Cruise Hackman" `shouldBe` [(3, 2)]
+      search index "Cruise Nicholson" `shouldBe` [(7, 0)]
+      search index "Robert De Niro" `shouldBe` [(5, 7), (2, 8)]
+      search index "Washington Ethan" `shouldBe` [(3, 5)]
