@@ -72,15 +72,15 @@ main = hspec $ do
 
      it "should find single word document" $ do
        let index = createIndex "Hello"
-       search index "Hello" `shouldBe` [(0,0)]
+       search index "Hello" `shouldBe` [("hello", 0,0)]
 
      it "should find word in two words document" $ do
        let index = createIndex "Hello World"
-       search index "World" `shouldBe` [(1,0)]
+       search index "World" `shouldBe` [("world", 1,0)]
 
      it "should find word in two lines doc" $ do
        let index = createIndex "Hello\nWorld"
-       search index "World" `shouldBe` [(0, 1)]
+       search index "World" `shouldBe` [("world", 0, 1)]
 
      it "should find most likely line" $ do
        let index = createIndex (
@@ -88,14 +88,23 @@ main = hspec $ do
               "Behind enemy lines\n" ++
               "Behind the planet of the apes\n" ++
               "Planet of the apes")
-       search index "Behind apes" `shouldBe` [(0,2)]
+       search index "Behind enemy" `shouldBe` [("behind",0, 1), ("enemy", 1, 1)]
+
+  describe "Partial term search" $ do
+
+    it "should find item with partial term" $ do
+      let index = createIndex("Back to the future\n" ++
+                              "Behind emeny lines\n")
+      search index "fut" `shouldBe` [("fut", 3, 0)]
+      search index "back to the fut" `shouldBe` [("back",0,0),("to",1,0),("the",2,0),("fut",3,0)]
 
   describe "Integration tests" $ do
 
-    it "should work" $ do
+    it "should find movies" $ do
       movies <- readFile "./tests/SampleData.txt"
       let index = createIndex movies
-      search index "Cruise Hackman" `shouldBe` [(3, 2)]
-      search index "Cruise Nicholson" `shouldBe` [(7, 0)]
-      search index "Robert De Niro" `shouldBe` [(5, 7), (2, 8)]
-      search index "Washington Ethan" `shouldBe` [(3, 5)]
+      search index "Cruise Hackman" `shouldBe` [("cruise",3,2),("hackman",5,2)]
+      search index "Cruise Nicholson" `shouldBe` []
+      search index "Robert De Niro" `shouldBe`  [("robert",5,7),("de",6,7),("niro",7,7),("robert",2,8),("de",3,8),("niro",4,8)]
+      search index "Washington Ethan" `shouldBe` [("washington",3,5),("ethan",4,5)]
+      search index "Hack" `shouldBe` [("hack",5,2),("hack",3,4),("hack",4,6)]
