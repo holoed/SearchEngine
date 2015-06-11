@@ -3,9 +3,10 @@ module InvertedIndex where
   import Prelude hiding (lookup)
   import Data.Function
   import Data.Char
-  import Data.List hiding (lookup)
-  import Data.Map (Map, fromList, lookup, toList, filterWithKey)
-  import Control.Applicative
+  import Data.List hiding (insert, lookup)
+  import Data.Map (Map, fromList, lookup, elems, insert, keys, empty, (!))
+  import Control.Applicative hiding (empty)
+  import Data.Maybe (fromMaybe)
 
   type Doc = String
   type Line = String
@@ -15,6 +16,8 @@ module InvertedIndex where
   type Index = Map Word [(Pos, LineNumber)]
 
   data IndexedWord = IndexedWord { word:: Word, pos:: Pos, line:: LineNumber }
+
+  data PartialTermIndex = D (Map Char ([String], PartialTermIndex))
 
   both :: (a -> Bool) -> (a -> Bool) -> a -> Bool
   both = liftA2 (&&)
@@ -43,14 +46,38 @@ module InvertedIndex where
                    f ((w, ls):xs) (w2, [l]) | w /= w2 = (w2, [l]):((w, ls):xs)
                    f _ _ = fail "What the hell happened"
 
-  createIndex :: Doc -> Index
-  createIndex =  fromList . accumulate . makeLists . sort . allNumWords . numLines
+  createTermIndex :: Doc -> Index
+  createTermIndex =  fromList . accumulate . makeLists . sort . allNumWords . numLines
 
-  getIndexedWords :: Index -> [Word] -> [IndexedWord]
-  getIndexedWords i = concatMap (\w -> map (\(p, l) -> IndexedWord{word=w,pos=p,line=l}) (item w))
-    where item w = case (lookup w i) of
-                     Just x -> x
-                     Nothing -> (concatMap snd . toList . filterWithKey (\k _ -> isPrefixOf w k)) i
+  createPartialTermIndex :: [String] -> PartialTermIndex
+  createPartialTermIndex []  = D empty
+  createPartialTermIndex ws  =
+      foldl (\(D m) (k, ws') -> D $ insert k (ws', createPartialTermIndex (fmap (drop 1) ws')) m) (D empty) .
+      fmap (\ws' -> (head . head $ ws', ws')) .
+      groupBy ((==) `on` head) .
+      sortBy (compare `on` head) .
+      filter (not . null) $ ws
+
+  searchTermsFromPartial :: String -> PartialTermIndex -> (Bool, [String])
+  searchTermsFromPartial s d = findTerms s d
+    where
+      findTerms [] (D d') = (True, fmap (s ++) $ concatMap fst $ elems d')
+      findTerms (x:xs) (D d') =
+        case lookup x d' of
+              Just (_, d'') -> findTerms xs d''
+              Nothing -> (False, fmap (s ++) $ concatMap fst $ elems d')
+
+  createIndex :: Doc -> (Index, PartialTermIndex)
+  createIndex doc = (index, createPartialTermIndex (keys index))
+    where index = createTermIndex doc
+
+
+  getIndexedWords :: (Index, PartialTermIndex) -> [Word] -> [IndexedWord]
+  getIndexedWords (i, pti) = concatMap (\w -> map (\(p, l) -> IndexedWord{word=w,pos=p,line=l}) (item w))
+    where item w = fromMaybe (let matches = searchTermsFromPartial w pti in
+                                if fst matches then concatMap (i!) (snd matches)
+                                               else [])
+                             (lookup w i)
 
   groupByLine :: [IndexedWord] -> [[IndexedWord]]
   groupByLine = map (sortBy(compare `on` pos)) .
@@ -67,7 +94,7 @@ module InvertedIndex where
   toTuple :: IndexedWord -> (Word, Pos, LineNumber)
   toTuple iw = (word iw, pos iw, line iw)
 
-  search :: Index -> String -> [(Word, Pos, LineNumber)]
+  search :: (Index, PartialTermIndex) -> String -> [(Word, Pos, LineNumber)]
   search i s = map toTuple (concat (filter predicate (groupByLine plwords)))
         where
               predicate = both (equalTermsAndResults cleaned_words) consecutiveWords

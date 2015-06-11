@@ -42,29 +42,29 @@ main = hspec $ do
         `shouldBe` [("lo", 0, 0), ("ha", 1, 0), ("detto", 2, 0), ("papa", 3, 0),
                     ("che", 0, 1), ("va", 1, 1), ("bene", 2, 1), ("capito", 3, 1)]
 
-  describe "createIndex tests" $ do
+  describe "createTermIndex tests" $ do
 
     it "should create an empty index for an empty document" $
-      (toList . createIndex) ""
+      (toList . createTermIndex) ""
         `shouldBe` []
 
     it "should create an index of one element for a single word doc" $
-      (toList . createIndex) "Hello"
+      (toList . createTermIndex) "Hello"
         `shouldBe` [("hello", [(0, 0)])]
 
     it "should create an index" $ do
-      (toList . createIndex) "Hello World"
+      (toList . createTermIndex) "Hello World"
         `shouldBe` [("hello", [(0, 0)]), ("world", [(1, 0)])]
 
-      (toList . createIndex) "Back to the Future\nA few good man"
+      (toList . createTermIndex) "Back to the Future\nA few good man"
         `shouldBe`[("a",[(0, 1)]),("back",[(0,0)]),("few",[(1,1)]),("future",[(3,0)]),
                    ("good",[(2, 1)]),("man",[(3, 1)]),("the",[(2, 0)]),("to",[(1, 0)])]
 
-      (toList . createIndex) "A few good men\nAll the President's men"
+      (toList . createTermIndex) "A few good men\nAll the President's men"
         `shouldBe`[("a",[(0, 0)]),("all",[(0, 1)]),("few",[(1, 0)]),
                    ("good",[(2, 0)]),("men",[(3, 1), (3, 0)]),("presidents",[(2, 1)]),("the",[(1, 1)])]
 
-      (toList . createIndex) "Back to the future\nIn to the future\nBack in time"
+      (toList . createTermIndex) "Back to the future\nIn to the future\nBack in time"
         `shouldBe`[("back",[(0,2),(0,0)]),("future",[(3,1),(3,0)]),("in",[(1,2), (0,1)]),
                    ("the",[(2,1),(2,0)]),("time",[(2, 2)]),("to",[(1,1),(1,0)])]
 
@@ -90,13 +90,33 @@ main = hspec $ do
               "Planet of the apes")
        search index "Behind enemy" `shouldBe` [("behind",0, 1), ("enemy", 1, 1)]
 
+  describe "Partial term index tests" $ do
+
+      it "should find all words starting with" $ do
+        let partial_term_index  = createPartialTermIndex (words "welcome to the real world of back and bad")
+        searchTermsFromPartial "b" partial_term_index `shouldBe` (True, ["back", "bad"])
+        searchTermsFromPartial "ba" partial_term_index `shouldBe` (True, ["back", "bad"])
+        searchTermsFromPartial "bac" partial_term_index `shouldBe` (True, ["back"])
+        searchTermsFromPartial "bad" partial_term_index `shouldBe` (True, [])
+        searchTermsFromPartial "backs" partial_term_index `shouldBe` (False, [])
+        searchTermsFromPartial "w" partial_term_index `shouldBe` (True, ["welcome", "world"])
+        searchTermsFromPartial "wel" partial_term_index `shouldBe` (True, ["welcome"])
+        searchTermsFromPartial "wo" partial_term_index `shouldBe` (True, ["world"])
+
   describe "Partial term search" $ do
 
-    it "should find item with partial term" $ do
-      let index = createIndex("Back to the future\n" ++
+      it "should find item with partial term" $ do
+        let index = createIndex("Back to the future\n" ++
                               "Behind emeny lines\n")
-      search index "fut" `shouldBe` [("fut", 3, 0)]
-      search index "back to the fut" `shouldBe` [("back",0,0),("to",1,0),("the",2,0),("fut",3,0)]
+        search index "fut" `shouldBe` [("fut", 3, 0)]
+        search index "back to the fut" `shouldBe` [("back",0,0),("to",1,0),("the",2,0),("fut",3,0)]
+
+      it "should find multiple terms with partial search" $ do
+        let index  = createIndex "Back to the future\nThe bad guy\nThe fuss is all about"
+        search index "The fu" `shouldBe` [("the",2,0),("fu",3,0),("the",0,2),("fu",1,2)]
+        search index "the fut" `shouldBe` [("the",2,0),("fut",3,0)]
+        search index "the fus" `shouldBe` [("the",0,2),("fus",1,2)]
+
 
   describe "Integration tests" $ do
 
@@ -108,3 +128,4 @@ main = hspec $ do
       search index "Robert De Niro" `shouldBe`  [("robert",5,7),("de",6,7),("niro",7,7),("robert",2,8),("de",3,8),("niro",4,8)]
       search index "Washington Ethan" `shouldBe` [("washington",3,5),("ethan",4,5)]
       search index "Hack" `shouldBe` [("hack",5,2),("hack",3,4),("hack",4,6)]
+      search index "D Wash" `shouldBe` [("d",4,4),("wash",5,4)]
