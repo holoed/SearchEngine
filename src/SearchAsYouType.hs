@@ -9,7 +9,7 @@ module SearchAsYouType where
 
 
   createPartialTermIndex :: [String] -> Dict
-  createPartialTermIndex [] = Dict empty
+  createPartialTermIndex []  = Dict empty
   createPartialTermIndex ws  =
               foldl (\(Dict m) (k, ws') -> Dict $ insert k (ws', createPartialTermIndex (fmap (drop 1) ws')) m) (Dict empty) .
               fmap (\ws' -> (head . head $ ws', ws')) .
@@ -17,8 +17,11 @@ module SearchAsYouType where
               sortBy (compare `on` head) .
               filter (not . null) $ ws
 
-  findPartialTerm :: String -> Dict -> (Bool, String)
-  findPartialTerm [] (Dict d) = (True, keys d)
-  findPartialTerm (x:xs) (Dict d) = case lookup x d of
-                            Just (_, d') -> findPartialTerm xs d'
-                            Nothing -> (False, keys d)
+  findPartialTerm :: String -> Dict -> (Bool, [String])
+  findPartialTerm s d = findTerms s d
+    where
+      findTerms [] (Dict d') = (True, fmap (s ++) $ concatMap fst $ elems d')
+      findTerms (x:xs) (Dict d') =
+        case lookup x d' of
+              Just (_, d'') -> findTerms xs d''
+              Nothing -> (False, fmap (s ++) $ concatMap fst $ elems d')
