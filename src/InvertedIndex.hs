@@ -62,11 +62,13 @@ module InvertedIndex where
   searchTermsFromPartial :: String -> PartialTermIndex -> (Bool, [String])
   searchTermsFromPartial s d = findTerms s d
     where
-      findTerms [] (D d') = (True, fmap (s ++) $ concatMap fst $ elems d')
+      flattenValues = fmap (s ++) . concatMap fst . elems 
+
+      findTerms [] (D d') = (True, flattenValues d')
       findTerms (x:xs) (D d') =
         case lookup x d' of
               Just (_, d'') -> findTerms xs d''
-              Nothing -> (False, fmap (s ++) $ concatMap fst $ elems d')
+              Nothing -> (False, flattenValues d')
 
   createIndex :: Doc -> (Index, PartialTermIndex)
   createIndex doc = (index, createPartialTermIndex (keys index))
