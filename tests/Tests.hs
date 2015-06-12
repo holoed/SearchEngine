@@ -117,6 +117,13 @@ main = hspec $ do
         search index "the fut" `shouldBe` [("the",2,0),("fut",3,0)]
         search index "the fus" `shouldBe` [("the",0,2),("fus",1,2)]
 
+  describe "partial search through the terms of the index" $ do
+
+    it "should find full terms from partials" $ do
+      movies <- readFile "./tests/SampleData.txt"
+      let index = createIndex movies
+      getWordIndex index "d" `shouldBe` [(1,5),(6,7),(3,8),(8,0),(4,4),(2,5)]
+      getWordIndex index "wash" `shouldBe` [(5,4),(3,5)]
 
   describe "Integration tests" $ do
 
@@ -124,8 +131,9 @@ main = hspec $ do
       movies <- readFile "./tests/SampleData.txt"
       let index = createIndex movies
       search index "Cruise Hackman" `shouldBe` [("cruise",3,2),("hackman",5,2)]
-      search index "Cruise Nicholson" `shouldBe` []
+      search index "Cruise Nicholson" `shouldBe` [("nicholson",5,0),("cruise",7,0)]
       search index "Robert De Niro" `shouldBe`  [("robert",5,7),("de",6,7),("niro",7,7),("robert",2,8),("de",3,8),("niro",4,8)]
       search index "Washington Ethan" `shouldBe` [("washington",3,5),("ethan",4,5)]
       search index "Hack" `shouldBe` [("hack",5,2),("hack",3,4),("hack",4,6)]
-      search index "D Wash" `shouldBe` [("d",4,4),("wash",5,4)]
+      search index "Denzel Washington" `shouldBe` [("denzel",4,4),("washington",5,4),("denzel",2,5),("washington",3,5)]
+      search index "D Wash" `shouldBe` [("d",4,4),("wash",5,4),("d",1,5),("d",2,5),("wash",3,5)]

@@ -7,6 +7,7 @@ module InvertedIndex where
   import Data.Map (Map, fromList, lookup, elems, insert, keys, empty, (!))
   import Control.Applicative hiding (empty)
   import Data.Maybe (fromMaybe)
+  import qualified Data.Set as Set
 
   type Doc = String
   type Line = String
@@ -71,13 +72,14 @@ module InvertedIndex where
   createIndex doc = (index, createPartialTermIndex (keys index))
     where index = createTermIndex doc
 
+  getWordIndex :: (Index, PartialTermIndex) -> String -> [(Pos, LineNumber)]
+  getWordIndex (i, pti) w = fromMaybe (if fst matches then concatMap (i!) (snd matches)
+                                                      else [])
+                                      (lookup w i)
+                where matches = searchTermsFromPartial w pti
 
   getIndexedWords :: (Index, PartialTermIndex) -> [Word] -> [IndexedWord]
-  getIndexedWords (i, pti) = concatMap (\w -> map (\(p, l) -> IndexedWord{word=w,pos=p,line=l}) (item w))
-    where item w = fromMaybe (let matches = searchTermsFromPartial w pti in
-                                if fst matches then concatMap (i!) (snd matches)
-                                               else [])
-                             (lookup w i)
+  getIndexedWords i = concatMap (\w -> map (\(p, l) -> IndexedWord{word=w,pos=p,line=l}) (getWordIndex i w))
 
   groupByLine :: [IndexedWord] -> [[IndexedWord]]
   groupByLine = map (sortBy(compare `on` pos)) .
@@ -85,7 +87,7 @@ module InvertedIndex where
                  sortBy(compare `on` line)
 
   equalTermsAndResults :: [Word] -> [IndexedWord] -> Bool
-  equalTermsAndResults ws rs = map word rs == ws
+  equalTermsAndResults ws rs = Set.isSubsetOf (Set.fromList ws) (Set.fromList $ map word rs)
 
   consecutiveWords :: [IndexedWord] -> Bool
   consecutiveWords rs = all (\(x,y) -> y - x <= 2) (zip ps (drop 1 ps))
