@@ -75,10 +75,11 @@ module InvertedIndex where
     where index = createTermIndex doc
 
   getWordIndex :: (Index, PartialTermIndex) -> String -> [(Pos, LineNumber)]
-  getWordIndex (i, pti) w = fromMaybe (if fst matches then concatMap (i!) (snd matches)
-                                                      else [])
-                                      (lookup w i)
+  getWordIndex (i, pti) w = fromMaybe partialResults
+                                      (fmap (++ partialResults) (lookup w i) )
                 where matches = searchTermsFromPartial w pti
+                      partialResults = if fst matches then concatMap (i!) (snd matches)
+                                                      else []
 
   getIndexedWords :: (Index, PartialTermIndex) -> [Word] -> [IndexedWord]
   getIndexedWords i = concatMap (\w -> map (\(p, l) -> IndexedWord{word=w,pos=p,line=l}) (getWordIndex i w))
