@@ -62,7 +62,7 @@ module InvertedIndex where
   searchTermsFromPartial :: String -> PartialTermIndex -> (Bool, [String])
   searchTermsFromPartial s d = findTerms s d
     where
-      flattenValues = fmap (s ++) . concatMap fst . elems 
+      flattenValues = fmap (s ++) . concatMap fst . elems
 
       findTerms [] (D d') = (True, flattenValues d')
       findTerms (x:xs) (D d') =
@@ -92,16 +92,12 @@ module InvertedIndex where
   equalTermsAndResults :: [Word] -> [IndexedWord] -> Bool
   equalTermsAndResults ws rs = Set.isSubsetOf (Set.fromList ws) (Set.fromList $ map word rs)
 
-  consecutiveWords :: [IndexedWord] -> Bool
-  consecutiveWords rs = all (\(x,y) -> y - x <= 2) (zip ps (drop 1 ps))
-        where ps = map pos rs
-
   toTuple :: IndexedWord -> (Word, Pos, LineNumber)
   toTuple iw = (word iw, pos iw, line iw)
 
   search :: (Index, PartialTermIndex) -> String -> [(Word, Pos, LineNumber)]
   search i s = map toTuple (concat (filter predicate (groupByLine plwords)))
         where
-              predicate = both (equalTermsAndResults cleaned_words) consecutiveWords
+              predicate = equalTermsAndResults cleaned_words
               cleaned_words = (cleanWords . words) s
               plwords = getIndexedWords i cleaned_words
