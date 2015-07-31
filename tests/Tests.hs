@@ -31,6 +31,9 @@ main = hspec $ do
       cleanWords ["This,", "is", "an", "experiment'", "of", "great", "%"]
         `shouldBe` ["this", "is", "an", "experiment", "of", "great"]
 
+    it "should keep numbers which are separate" $
+      cleanWords ["1984"] `shouldBe` ["1984"]
+
   describe "allNumWords tests" $ do
 
     it "should convert lines in to words keeping line numbers" $
@@ -141,3 +144,4 @@ main = hspec $ do
         search index "Hack" `shouldBe` [("hack",5,2),("hack",3,4),("hack",4,6)]
         search index "Denzel Washington" `shouldBe` [("denzel",4,4),("washington",5,4),("denzel",2,5),("washington",3,5)]
         search index "D Wash" `shouldBe` [("d",4,4),("wash",5,4),("d",1,5),("d",2,5),("wash",3,5)]
+        search index "1984" `shouldBe` [("1984", 0, 9)]
